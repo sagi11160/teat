@@ -1,0 +1,96 @@
+version: "3.9"
+
+services:
+  # ---------------------------------------------------------------
+  # Tier 1 — OT Hardware Simulator (PLC)
+  # ---------------------------------------------------------------
+  plc_simulator:
+    build:
+      context: .
+      dockerfile: plc_simulator/Dockerfile
+    ports:
+      - "5020:5020"
+    networks:
+      - ot_net
+    healthcheck:
+      test: ["CMD", "python", "-c", "from pymodbus.client import ModbusTcpClient; c=ModbusTcpClient('127.0.0.1',port=5020); assert c.connect(); c.close()"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  # ---------------------------------------------------------------
+  # Tier 1 — Edge Camera Mock (Jetson Orin Nano)
+  # ---------------------------------------------------------------
+  edge_mock:
+    build:
+      context: .
+      dockerfile: edge_mock/Dockerfile
+    ports:
+      - "8001:8001"
+    networks:
+      - dmz_net
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; r=httpx.get('http://127.0.0.1:8001/health'); assert r.status_code==200"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 3s
+
+  # ---------------------------------------------------------------
+  # Tier 3 — Cloud AI Agent (RAG + Code Generator)
+  # ---------------------------------------------------------------
+  cloud_ai_agent:
+    build:
+      context: .
+      dockerfile: cloud_ai_agent/Dockerfile
+    ports:
+      - "8002:8002"
+    networks:
+      - cloud_net
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; r=httpx.get('http://127.0.0.1:8002/health'); assert r.status_code==200"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 3s
+
+  # ---------------------------------------------------------------
+  # Tier 2 — Gateway HMI (The Brain & Shield)
+  # ---------------------------------------------------------------
+  gateway_hmi:
+    build:
+      context: .
+      dockerfile: gateway_hmi/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - EDGE_URL=http://edge_mock:8001
+      - CLOUD_URL=http://cloud_ai_agent:8002
+      - PLC_HOST=plc_simulator
+      - PLC_PORT=5020
+    depends_on:
+      plc_simulator:
+        condition: service_healthy
+      edge_mock:
+        condition: service_healthy
+      cloud_ai_agent:
+        condition: service_healthy
+    networks:
+      - ot_net
+      - dmz_net
+      - cloud_net
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; r=httpx.get('http://127.0.0.1:8000/health'); assert r.status_code==200"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+networks:
+  ot_net:
+    driver: bridge
+  dmz_net:
+    driver: bridge
+  cloud_net:
+    driver: bridge
