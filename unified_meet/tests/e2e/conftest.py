@@ -73,6 +73,7 @@ def live_server(tmp_path_factory):
         "MB_HOST": "127.0.0.1",
         "MB_PUBLIC_BASE_URL": base,
         "MB_DATABASE_URL": f"sqlite:///{tmp / 'live.db'}",
+        "MB_DATA_DIR": str(tmp / "data"),
         "MB_SECRET_KEY": "e2e-secret-key-0123456789-abcdefghijklmnop",
         "MB_ENABLE_MOCK_PROVIDER": "true",
         "MB_ICE_SERVERS": "[]",

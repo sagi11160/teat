@@ -20,6 +20,7 @@ def make_settings(tmp_path, **overrides: Any) -> Settings:
     values: dict[str, Any] = {
         "env": "test",
         "database_url": f"sqlite:///{tmp_path / 'test.db'}",
+        "data_dir": tmp_path / "data",
         "secret_key": "test-secret-key-that-is-long-enough-0123456789",
         "public_base_url": "http://testserver",
         "supervisor_interval_seconds": 0.05,

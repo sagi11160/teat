@@ -17,7 +17,7 @@ from . import __version__
 from .api import auth, live, ops, rooms
 from .api.deps import Services
 from .bridge import BotRunner, PlaywrightBotRunner, Supervisor
-from .config import BASE_DIR, Settings, get_settings
+from .config import Settings, get_settings
 from .db import init_engine
 from .hub import EventBus, Hub
 from .logging_setup import configure_logging
@@ -47,7 +47,7 @@ def create_app(settings: Settings | None = None, runner_factory: RunnerFactory |
     async def lifespan(app: FastAPI):
         upgrade_to_head(settings.database_url)
         init_engine(settings.database_url)
-        configure_secret(settings.secret_key, BASE_DIR / "data")
+        configure_secret(settings.secret_key, settings.data_dir)
         bus = EventBus()
         hub = Hub(bus, settings.ice_servers, settings.max_participants_per_room)
         registry = ProviderRegistry(settings)

@@ -14,9 +14,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="MB_", env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_prefix="MB_", env_file=BASE_DIR / ".env", extra="ignore")
 
     env: str = Field("development", description="development | test | production")
+    data_dir: Path = Field(BASE_DIR / "data", description="Generated secret key and backups live here")
     database_url: str = f"sqlite:///{BASE_DIR / 'data' / 'meetbridge.db'}"
     secret_key: str = Field("", description="Random string used to derive session cookie signatures")
     public_base_url: str = "http://localhost:8080"

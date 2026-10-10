@@ -141,11 +141,10 @@ def owned(client):
     return room["id"], link["id"]
 
 
-@pytest.mark.parametrize("method, path, body", ROOM_ROUTES)
+# The streaming endpoint's success path is covered against a live server in tests/e2e.
+@pytest.mark.parametrize("method, path, body", [r for r in ROOM_ROUTES if not r[1].endswith("/stream")])
 def test_owner_can_access(client, owned, method, path, body):
     rid, lid = owned
-    if path.endswith("/stream"):
-        pytest.skip("streaming endpoint is covered in test_live")
     url = path.format(rid=rid, lid=lid)
     if method == "POST" and url.endswith("/links"):
         body = {"url": TEAMS}
