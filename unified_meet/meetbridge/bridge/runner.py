@@ -29,6 +29,8 @@ _BROWSER_ARGS = [
     "--autoplay-policy=no-user-gesture-required",
     "--disable-blink-features=AutomationControlled",
     "--no-default-browser-check",
+    # Containers default to a 64 MB /dev/shm, which crashes Chromium tabs.
+    "--disable-dev-shm-usage",
 ]
 # Platforms that decode audio in WASM and play it through WebAudio instead of
 # exposing remote WebRTC tracks.
