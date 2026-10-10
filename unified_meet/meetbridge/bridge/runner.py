@@ -46,6 +46,7 @@ class BotJob:
     url: str
     passcode: str | None
     display_name: str
+    label: str = ""
 
 
 class BotRunner(Protocol):
@@ -176,7 +177,8 @@ class PlaywrightBotRunner:
             async def to_page(msg: dict[str, Any]) -> None:
                 await outbox.put(msg)
 
-            peer = await self.hub.join(job.room_id, adapter.display_name, job.provider, to_page, link_id=job.link_id)
+            member_name = f"{adapter.display_name} · {job.label}" if job.label else adapter.display_name
+            peer = await self.hub.join(job.room_id, member_name, job.provider, to_page, link_id=job.link_id)
             await on_state("live", "")
             return await self._monitor(adapter, page, stop)
         finally:

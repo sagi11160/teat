@@ -149,6 +149,7 @@ class Supervisor:
                         url=link.url,
                         passcode=link.passcode,
                         display_name=room.bot_display_name if room else self.settings.bot_default_name,
+                        label=link.label,
                     )
                 )
         return {"start": start, "stop": stop}
