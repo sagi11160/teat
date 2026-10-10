@@ -42,6 +42,19 @@ def test_session_cookie_flags(client):
     assert "samesite=lax" in cookie
 
 
+def test_expired_session_is_rejected(client):
+    from datetime import timedelta
+
+    from meetbridge.models import utcnow
+
+    register(client)
+    assert client.get("/api/auth/me").status_code == 200
+    with session_scope() as db:
+        db.scalar(select(AuthSession)).expires_at = utcnow() - timedelta(seconds=1)
+    res = client.get("/api/auth/me")
+    assert res.status_code == 401 and res.json()["error"]["code"] == "not_authenticated"
+
+
 def test_logout_revokes_session_server_side(client):
     register(client)
     token = client.cookies.get("mb_session")

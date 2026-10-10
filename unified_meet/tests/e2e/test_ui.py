@@ -167,6 +167,11 @@ def test_browser_call_page(live_server, browser_page):
     else:
         raise AssertionError("browser participants never connected")
 
+    other.click("#toggle-cam")
+    expect(other.locator("#toggle-cam")).to_have_attribute("aria-pressed", "true")
+    expect(other.locator("#tile-self .avatar")).to_be_visible()
+    other.click("#toggle-cam")
+    expect(other.locator("#tile-self video")).to_be_visible()
     other.click("#toggle-mic")
     expect(other.locator("#toggle-mic")).to_have_attribute("aria-pressed", "true")
     expect(page.locator("#stage .tile:not(#tile-self) .hint")).to_be_visible()  # "(מושתק)"
