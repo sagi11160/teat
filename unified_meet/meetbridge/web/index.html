@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MeetBridge — חדר אחד לכל הפלטפורמות</title>
+<link rel="stylesheet" href="/static/app.css">
+<script type="module" src="/static/index.js"></script>
+</head>
+<body>
+<a class="skip-link" href="#main">דילוג לתוכן</a>
+<header class="top">
+  <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>MeetBridge</a>
+  <span class="spacer"></span>
+  <span class="who" id="who" hidden></span>
+  <button class="secondary" id="logout" hidden>התנתקות</button>
+</header>
+<main class="page" id="main" tabindex="-1">
+  <div id="loading" class="stack" aria-busy="true" aria-label="טוען">
+    <div class="skeleton"></div><div class="skeleton"></div>
+  </div>
+
+  <section id="auth" hidden>
+    <div class="grid-2">
+      <div>
+        <h1>חדר שיחה אחד — Zoom, Google Meet ו-Teams יחד</h1>
+        <p class="lead">כל משתתף מצטרף מהפלטפורמה שהוא מעדיף, וכולם שומעים ורואים את כולם באותו חדר.</p>
+        <ol class="stack">
+          <li>יוצרים חדר מאוחד.</li>
+          <li>מחברים אליו פגישות קיימות ב-Zoom, ב-Google Meet וב-Teams.</li>
+          <li>שולחים למשתתפים קישור הזמנה אחד — כל אחד בוחר איך להצטרף, גם ישירות מהדפדפן.</li>
+        </ol>
+      </div>
+      <div class="card">
+        <div class="tabs" role="tablist" aria-label="כניסה או הרשמה">
+          <button role="tab" id="tab-login" aria-selected="true" aria-controls="login-form">התחברות</button>
+          <button role="tab" id="tab-register" aria-selected="false" aria-controls="register-form" tabindex="-1">הרשמה</button>
+        </div>
+        <div id="auth-alert" hidden></div>
+        <form id="login-form" role="tabpanel" aria-labelledby="tab-login" novalidate>
+          <div class="field"><label for="login-email">אימייל</label>
+            <input id="login-email" name="email" type="email" class="ltr" autocomplete="email" required></div>
+          <div class="field"><label for="login-password">סיסמה</label>
+            <input id="login-password" name="password" type="password" class="ltr" autocomplete="current-password" required></div>
+          <div class="field"><button type="submit">התחברות</button></div>
+        </form>
+        <form id="register-form" role="tabpanel" aria-labelledby="tab-register" novalidate hidden>
+          <div class="field"><label for="reg-name">שם מלא</label>
+            <input id="reg-name" name="display_name" type="text" autocomplete="name" required maxlength="80"></div>
+          <div class="field"><label for="reg-email">אימייל</label>
+            <input id="reg-email" name="email" type="email" class="ltr" autocomplete="email" required></div>
+          <div class="field"><label for="reg-password">סיסמה</label>
+            <input id="reg-password" name="password" type="password" class="ltr" autocomplete="new-password" required minlength="10">
+            <div class="hint">לפחות 10 תווים.</div></div>
+          <div class="field"><button type="submit">יצירת חשבון</button></div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section id="dashboard" hidden class="stack">
+    <div class="row between">
+      <h1>החדרים שלי</h1>
+    </div>
+    <div class="card">
+      <h2>חדר חדש</h2>
+      <form id="create-form" class="row" novalidate>
+        <div class="grow">
+          <label for="room-title">שם החדר</label>
+          <input id="room-title" name="title" type="text" required maxlength="120" placeholder="למשל: ישיבת צוות שבועית">
+        </div>
+        <button type="submit" class="self-end">יצירת חדר</button>
+      </form>
+      <div id="create-alert" hidden></div>
+    </div>
+    <div id="rooms-alert" hidden></div>
+    <div id="rooms-loading" class="stack" hidden><div class="skeleton"></div></div>
+    <ul class="room-list" id="rooms" aria-label="רשימת החדרים"></ul>
+    <div class="empty" id="rooms-empty" hidden>
+      <p>עדיין אין לכם חדרים.</p>
+      <p>צרו חדר ראשון, חברו אליו פגישות קיימות, ושלחו קישור הזמנה אחד לכולם.</p>
+    </div>
+  </section>
+</main>
+</body>
+</html>

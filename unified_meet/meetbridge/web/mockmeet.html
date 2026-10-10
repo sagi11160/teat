@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MockMeet</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #111827; color: #f9fafb; margin: 0; }
+  main { max-width: 960px; margin: 0 auto; padding: 24px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-top: 16px; }
+  .tile { background: #1f2937; border-radius: 8px; overflow: hidden; }
+  .tile video { width: 100%; aspect-ratio: 16/9; background: #000; display: block; }
+  .tile span { display: block; padding: 6px 10px; font-size: 14px; }
+  button, input { font-size: 16px; padding: 8px 12px; border-radius: 6px; border: 0; }
+  button { background: #2563eb; color: white; cursor: pointer; }
+  #mm-leave { background: #dc2626; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>MockMeet</h1>
+  <section id="prejoin">
+    <label for="mm-name">Your name</label>
+    <input id="mm-name" autocomplete="off">
+    <button id="mm-join">Join now</button>
+  </section>
+  <p id="status" role="status"></p>
+  <section id="call" hidden>
+    <button id="mm-leave">Leave call</button>
+    <div class="tiles" id="tiles"></div>
+  </section>
+</main>
+<script>
+const CODE = __CODE__;
+const peers = new Map();
+const names = new Map();
+window.__mmRemoteStreams = [];
+let ws, localStream, iceServers = [];
+const $ = (id) => document.getElementById(id);
+const status = (t) => { $('status').textContent = t; };
+
+function tile(id, label) {
+  let el = document.getElementById('t-' + id);
+  if (!el) {
+    el = document.createElement('div');
+    el.className = 'tile'; el.id = 't-' + id;
+    el.innerHTML = '<video autoplay playsinline></video><span></span>';
+    $('tiles').appendChild(el);
+  }
+  el.querySelector('span').textContent = label;
+  return el;
+}
+
+function send(msg) { ws.send(JSON.stringify(msg)); }
+
+function createPeer(info, initiator) {
+  const pc = new RTCPeerConnection({ iceServers });
+  peers.set(info.id, { pc, pending: [] });
+  localStream.getTracks().forEach((t) => pc.addTrack(t, localStream));
+  pc.onicecandidate = (e) => { if (e.candidate) send({ type: 'signal', to: info.id, data: { candidate: e.candidate.toJSON() } }); };
+  pc.ontrack = (e) => {
+    const stream = e.streams[0] || new MediaStream([e.track]);
+    if (!window.__mmRemoteStreams.includes(stream)) window.__mmRemoteStreams.push(stream);
+    const v = tile(info.id, info.name || names.get(info.id) || 'participant').querySelector('video');
+    v.srcObject = stream;
+  };
+  if (initiator) {
+    pc.createOffer().then((o) => pc.setLocalDescription(o)).then(() =>
+      send({ type: 'signal', to: info.id, data: { sdp: pc.localDescription.toJSON() } }));
+  }
+}
+
+async function onSignal(from, data) {
+  if (!peers.has(from)) createPeer({ id: from, name: '' }, false);
+  const p = peers.get(from);
+  if (data.sdp) {
+    await p.pc.setRemoteDescription(data.sdp);
+    for (const c of p.pending.splice(0)) await p.pc.addIceCandidate(c);
+    if (data.sdp.type === 'offer') {
+      await p.pc.setLocalDescription(await p.pc.createAnswer());
+      send({ type: 'signal', to: from, data: { sdp: p.pc.localDescription.toJSON() } });
+    }
+  } else if (data.candidate) {
+    if (p.pc.remoteDescription) await p.pc.addIceCandidate(data.candidate); else p.pending.push(data.candidate);
+  }
+}
+
+function endCall(text) {
+  peers.forEach((p) => p.pc.close());
+  peers.clear();
+  $('call').hidden = true;
+  $('prejoin').hidden = true;
+  status(text);
+  if (ws) ws.close();
+}
+
+$('mm-join').addEventListener('click', async () => {
+  const name = $('mm-name').value.trim() || 'guest';
+  $('mm-join').disabled = true;
+  localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+  tile('self', name + ' (you)').querySelector('video').srcObject = localStream;
+  tile('self', name + ' (you)').querySelector('video').muted = true;
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}/mock-meet/ws/${CODE}?name=${encodeURIComponent(name)}`);
+  ws.onmessage = (ev) => {
+    const msg = JSON.parse(ev.data);
+    if (msg.type === 'lobby') { $('prejoin').hidden = true; status('Waiting for the host to let you in'); }
+    else if (msg.type === 'denied') endCall('The host denied your request');
+    else if (msg.type === 'ended') endCall('The meeting has ended');
+    else if (msg.type === 'welcome') {
+      iceServers = msg.ice_servers || [];
+      $('prejoin').hidden = true; $('call').hidden = false; status('In call');
+      msg.peers.forEach((p) => createPeer(p, true));
+    } else if (msg.type === 'peer-joined') { names.set(msg.peer.id, msg.peer.name); tile(msg.peer.id, msg.peer.name); }
+    else if (msg.type === 'peer-left') {
+      const p = peers.get(msg.peer_id); if (p) p.pc.close(); peers.delete(msg.peer_id);
+      const t = document.getElementById('t-' + msg.peer_id); if (t) t.remove();
+    } else if (msg.type === 'signal') onSignal(msg.from, msg.data);
+  };
+});
+
+$('mm-leave').addEventListener('click', () => endCall('You left the call'));
+</script>
+</body>
+</html>

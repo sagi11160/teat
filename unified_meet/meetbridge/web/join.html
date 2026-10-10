@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>הזמנה לשיחה — MeetBridge</title>
+<link rel="stylesheet" href="/static/app.css">
+<script type="module" src="/static/join.js"></script>
+</head>
+<body>
+<a class="skip-link" href="#main">דילוג לתוכן</a>
+<header class="top">
+  <span class="brand"><span class="logo" aria-hidden="true"></span>MeetBridge</span>
+</header>
+<main class="page" id="main" tabindex="-1">
+  <div id="loading" class="stack" aria-busy="true" aria-label="טוען">
+    <div class="skeleton"></div><div class="skeleton"></div>
+  </div>
+  <div id="page-alert" hidden></div>
+  <section id="invite" hidden class="stack">
+    <div>
+      <p class="hint">הוזמנתם לשיחה</p>
+      <h1 id="title"></h1>
+      <p class="lead">בחרו איך נוח לכם להצטרף. לא משנה מה תבחרו — כולם נמצאים באותה שיחה, שומעים ורואים זה את זה.</p>
+      <p class="hint" id="participants" role="status"></p>
+    </div>
+    <div class="join-options" id="options"></div>
+    <div class="alert info" id="no-bridge" hidden>חלק מהפגישות עדיין לא מגושרות כרגע. אם תצטרפו דרכן, ייתכן שתשמעו רק את מי שמחובר לאותה פלטפורמה עד שהמארגן יפעיל את הגשר. הצטרפות מהדפדפן מחברת אתכם תמיד לכולם.</div>
+  </section>
+</main>
+</body>
+</html>
