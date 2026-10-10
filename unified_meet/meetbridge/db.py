@@ -63,6 +63,10 @@ def session_scope() -> Iterator[Session]:
 
 
 def get_db() -> Iterator[Session]:
-    """FastAPI dependency: one session per request, committed on success."""
+    """FastAPI dependency: one session per request, committed on success.
+
+    Always declare it as ``Depends(get_db, scope="function")`` so the commit happens
+    before the response is sent; otherwise a client can observe its own write missing.
+    """
     with session_scope() as session:
         yield session

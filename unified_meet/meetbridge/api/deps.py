@@ -41,14 +41,14 @@ def require_csrf(request: Request) -> None:
         raise api_error(403, "csrf_header_missing", "Missing X-MeetBridge header")
 
 
-def current_user(request: Request, db: Session = Depends(get_db)) -> User:
+def current_user(request: Request, db: Session = Depends(get_db, scope="function")) -> User:
     user = resolve_session(db, request.cookies.get(SESSION_COOKIE))
     if user is None:
         raise api_error(401, "not_authenticated", "Please sign in")
     return user
 
 
-def owned_room(room_id: str, user: User = Depends(current_user), db: Session = Depends(get_db)) -> Room:
+def owned_room(room_id: str, user: User = Depends(current_user), db: Session = Depends(get_db, scope="function")) -> Room:
     room = db.get(Room, room_id)
     # 404 for both "missing" and "not yours" so room IDs cannot be probed.
     if room is None or room.owner_id != user.id:

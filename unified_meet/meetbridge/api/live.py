@@ -27,7 +27,7 @@ def _room_by_token(db, token: str) -> Room | None:
 
 
 @router.get("/api/invite/{token}")
-def invite_info(token: str, db=Depends(get_db), svc: Services = Depends(services)):
+def invite_info(token: str, db=Depends(get_db, scope="function"), svc: Services = Depends(services)):
     """Public: what an invitee needs to pick how to join. Never exposes passcodes or IDs."""
     room = _room_by_token(db, token)
     if room is None:

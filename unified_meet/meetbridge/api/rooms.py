@@ -60,14 +60,14 @@ def _clean(text: str) -> str:
 
 
 @router.get("")
-def list_rooms(user: User = Depends(current_user), db: Session = Depends(get_db), svc: Services = Depends(services)):
+def list_rooms(user: User = Depends(current_user), db: Session = Depends(get_db, scope="function"), svc: Services = Depends(services)):
     rooms = db.scalars(select(Room).where(Room.owner_id == user.id).order_by(Room.created_at.desc()))
     return [room_public(r, svc) for r in rooms]
 
 
 @router.post("", status_code=201)
 def create_room(
-    body: RoomIn, user: User = Depends(current_user), db: Session = Depends(get_db), svc: Services = Depends(services)
+    body: RoomIn, user: User = Depends(current_user), db: Session = Depends(get_db, scope="function"), svc: Services = Depends(services)
 ):
     title = _clean(body.title)
     if not title:
@@ -91,7 +91,7 @@ def update_room(
     body: RoomPatch,
     room: Room = Depends(owned_room),
     user: User = Depends(current_user),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
     svc: Services = Depends(services),
 ):
     changes = {}
@@ -114,7 +114,7 @@ def update_room(
 async def rotate_invite(
     room: Room = Depends(owned_room),
     user: User = Depends(current_user),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
     svc: Services = Depends(services),
 ):
     room.invite_token = new_invite_token()
@@ -126,7 +126,7 @@ async def rotate_invite(
 
 @router.delete("/{room_id}", status_code=204)
 async def delete_room(
-    room: Room = Depends(owned_room), db: Session = Depends(get_db), svc: Services = Depends(services)
+    room: Room = Depends(owned_room), db: Session = Depends(get_db, scope="function"), svc: Services = Depends(services)
 ):
     room_id = room.id
     db.delete(room)
@@ -141,7 +141,7 @@ def add_link(
     body: LinkIn,
     room: Room = Depends(owned_room),
     user: User = Depends(current_user),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
     svc: Services = Depends(services),
 ):
     count = db.scalar(select(func.count()).select_from(MeetingLink).where(MeetingLink.room_id == room.id))
@@ -181,7 +181,7 @@ def update_link(
     link_id: str,
     body: LinkPatch,
     room: Room = Depends(owned_room),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
 ):
     link = _owned_link(room, link_id, db)
     if body.label is not None:
@@ -196,7 +196,7 @@ def delete_link(
     link_id: str,
     room: Room = Depends(owned_room),
     user: User = Depends(current_user),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
     svc: Services = Depends(services),
 ):
     link = _owned_link(room, link_id, db)
@@ -226,7 +226,7 @@ def start_link(
     link_id: str,
     room: Room = Depends(owned_room),
     user: User = Depends(current_user),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
     svc: Services = Depends(services),
 ):
     link = _owned_link(room, link_id, db)
@@ -243,7 +243,7 @@ def stop_link(
     link_id: str,
     room: Room = Depends(owned_room),
     user: User = Depends(current_user),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
     svc: Services = Depends(services),
 ):
     link = _owned_link(room, link_id, db)
@@ -258,7 +258,7 @@ def stop_link(
 @router.get("/{room_id}/events")
 def room_events(
     room: Room = Depends(owned_room),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
     limit: int = Query(50, ge=1, le=200),
     before: int | None = Query(None, ge=1),
 ):

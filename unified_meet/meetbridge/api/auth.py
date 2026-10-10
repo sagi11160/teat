@@ -68,7 +68,7 @@ def _set_cookie(response: Response, token: str, svc: Services) -> None:
 
 
 @router.post("/register", status_code=201)
-def register(body: RegisterIn, response: Response, db: Session = Depends(get_db), svc: Services = Depends(services)):
+def register(body: RegisterIn, response: Response, db: Session = Depends(get_db, scope="function"), svc: Services = Depends(services)):
     if not svc.settings.allow_registration:
         raise api_error(403, "registration_closed", "Registration is disabled on this server")
     exists = db.scalar(select(func.count()).select_from(User).where(User.email == body.email))
@@ -86,7 +86,7 @@ def login(
     body: LoginIn,
     request: Request,
     response: Response,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
     svc: Services = Depends(services),
 ):
     email = body.email.strip().lower()
@@ -105,7 +105,7 @@ def login(
 
 
 @router.post("/logout", status_code=204)
-def logout(request: Request, response: Response, db: Session = Depends(get_db)):
+def logout(request: Request, response: Response, db: Session = Depends(get_db, scope="function")):
     revoke_session(db, request.cookies.get(SESSION_COOKIE))
     response.delete_cookie(SESSION_COOKIE, path="/")
     response.status_code = 204
