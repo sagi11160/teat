@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import time
 from collections.abc import Callable
 from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine, text
 
 from meetbridge.bridge.runner import MEETING_ENDED, STOPPED, BotJob
 from meetbridge.config import Settings
@@ -14,12 +16,30 @@ from meetbridge.main import create_app
 from meetbridge.providers import JoinError
 
 CSRF = {"X-MeetBridge": "1"}
+# Set to e.g. postgresql+psycopg://user:pass@localhost/meetbridge_test to run the
+# API/supervisor suites against PostgreSQL. The database's public schema is wiped.
+PG_URL = os.environ.get("MB_TEST_DATABASE_URL", "")
+
+
+def reset_postgres(url: str) -> None:
+    engine = create_engine(url)
+    with engine.begin() as conn:
+        conn.execute(text("DROP SCHEMA IF EXISTS public CASCADE"))
+        conn.execute(text("CREATE SCHEMA public"))
+    engine.dispose()
+
+
+def default_db_url(tmp_path) -> str:
+    if PG_URL:
+        reset_postgres(PG_URL)
+        return PG_URL
+    return f"sqlite:///{tmp_path / 'test.db'}"
 
 
 def make_settings(tmp_path, **overrides: Any) -> Settings:
     values: dict[str, Any] = {
         "env": "test",
-        "database_url": f"sqlite:///{tmp_path / 'test.db'}",
+        "database_url": overrides.pop("database_url", None) or default_db_url(tmp_path),
         "data_dir": tmp_path / "data",
         "secret_key": "test-secret-key-that-is-long-enough-0123456789",
         "public_base_url": "http://testserver",

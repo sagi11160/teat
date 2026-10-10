@@ -23,6 +23,7 @@ def test_room_crud(client):
     assert room["title"] == "Weekly sync"
     assert room["bot_display_name"] == "MeetBridge · Weekly sync"
     assert room["invite_url"].startswith("http://testserver/j/")
+    assert room["created_at"].endswith("+00:00")
 
     assert [r["id"] for r in client.get("/api/rooms").json()] == [room["id"]]
     res = client.patch(f"/api/rooms/{room['id']}", json={"title": "Renamed", "bot_display_name": "Bridge"}, headers=CSRF)

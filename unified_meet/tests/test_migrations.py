@@ -1,9 +1,12 @@
 import sqlite3
 
+import pytest
 from alembic import command
 from sqlalchemy import create_engine, inspect, text
 
 from meetbridge.migrate import alembic_config, upgrade_to_head
+
+from .conftest import PG_URL, reset_postgres
 
 TABLES = {"users", "auth_sessions", "rooms", "meeting_links", "room_events", "login_attempts", "alembic_version"}
 
@@ -35,6 +38,24 @@ def test_downgrade_and_upgrade_again(tmp_path):
     assert set(inspect(create_engine(url)).get_table_names()) <= {"alembic_version"}
     upgrade_to_head(url)
     assert TABLES <= set(inspect(create_engine(url)).get_table_names())
+
+
+@pytest.mark.skipif(not PG_URL, reason="MB_TEST_DATABASE_URL (PostgreSQL) not set")
+def test_postgres_from_zero_downgrade_upgrade_keeps_data():
+    reset_postgres(PG_URL)
+    upgrade_to_head(PG_URL)
+    engine = create_engine(PG_URL)
+    assert TABLES <= set(inspect(engine).get_table_names())
+    with engine.begin() as conn:
+        conn.execute(text("INSERT INTO users (id, email, display_name, password_hash, created_at) VALUES ('u1', 'a@b.c', 'A', 'h', now())"))
+    upgrade_to_head(PG_URL)
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT email FROM users")).scalar_one() == "a@b.c"
+    command.downgrade(alembic_config(PG_URL), "base")
+    assert set(inspect(engine).get_table_names()) <= {"alembic_version"}
+    upgrade_to_head(PG_URL)
+    assert TABLES <= set(inspect(engine).get_table_names())
+    engine.dispose()
 
 
 def test_schema_constraints(tmp_path):
