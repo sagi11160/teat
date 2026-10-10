@@ -13,7 +13,7 @@ from sqlalchemy import select
 from ..config import Settings
 from ..db import session_scope
 from ..hub import EventBus
-from ..models import ACTIVE_LINK_STATES, DesiredState, LinkState, MeetingLink, Room, RoomEvent, utcnow
+from ..models import ACTIVE_LINK_STATES, DesiredState, LinkState, MeetingLink, Room, RoomEvent, iso, utcnow
 from ..providers import InvalidMeetingUrl, JoinError
 from .runner import MEETING_ENDED, BotJob, BotRunner
 
@@ -31,8 +31,8 @@ def link_public(link: MeetingLink) -> dict[str, Any]:
         "state": link.state,
         "state_detail": link.state_detail,
         "attempts": link.attempts,
-        "retry_at": link.retry_at.isoformat() if link.retry_at else None,
-        "state_changed_at": link.state_changed_at.isoformat() if link.state_changed_at else None,
+        "retry_at": iso(link.retry_at),
+        "state_changed_at": iso(link.state_changed_at),
     }
 
 

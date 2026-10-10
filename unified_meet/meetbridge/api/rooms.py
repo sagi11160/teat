@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from ..bridge import link_public
 from ..db import get_db
-from ..models import DesiredState, LinkState, MeetingLink, Room, RoomEvent, User, utcnow
+from ..models import DesiredState, LinkState, MeetingLink, Room, RoomEvent, User, iso, utcnow
 from ..providers import InvalidMeetingUrl
 from ..security import new_invite_token
 from .deps import Services, api_error, current_user, owned_room, require_csrf, services
@@ -45,7 +45,7 @@ def room_public(room: Room, svc: Services) -> dict:
         "bot_display_name": room.bot_display_name,
         "invite_url": f"{base}/j/{room.invite_token}",
         "call_url": f"{base}/call/{room.invite_token}",
-        "created_at": room.created_at.isoformat(),
+        "created_at": iso(room.created_at),
         "links": [link_public(link) for link in room.links],
         "participants": svc.hub.snapshot(room.id),
     }
@@ -273,7 +273,7 @@ def room_events(
             "link_id": e.link_id,
             "actor": e.actor.split(":", 1)[0],
             "detail": e.detail,
-            "created_at": e.created_at.isoformat(),
+            "created_at": iso(e.created_at),
         }
         for e in rows
     ]

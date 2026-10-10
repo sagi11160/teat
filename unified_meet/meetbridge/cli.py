@@ -1,6 +1,6 @@
 """Operations CLI: ``python -m meetbridge.cli <command>``.
 
-Commands: doctor, migrate, backup, restore, create-user.
+Commands: doctor, migrate, backup, restore, create-user, bot-login, bot-logout.
 """
 
 from __future__ import annotations
@@ -63,6 +63,9 @@ def doctor(settings: Settings, check_browser: bool = True) -> int:
         _warn("public URL", "browsers only allow camera/microphone on https:// (or localhost)")
     if settings.enable_mock_provider:
         _warn("mock provider", "MockMeet test platform is enabled")
+    for provider in ("zoom", "google_meet", "teams"):
+        account = settings.bot_account_file(provider)
+        _ok(f"{provider} bridge", "signed-in account" if account.is_file() else "joins as guest")
     if not any("turn:" in str(s.get("urls")) for s in settings.ice_servers):
         _warn("ICE", "no TURN server configured; browser guests behind strict NATs may not connect")
 
@@ -200,6 +203,50 @@ def create_user(settings: Settings, email: str, name: str) -> int:
     return 0
 
 
+# ------------------------------------------------------------- bot accounts
+SIGN_IN_URLS = {
+    "zoom": "https://zoom.us/signin",
+    "google_meet": "https://accounts.google.com/ServiceLogin?continue=https://meet.google.com/",
+    "teams": "https://teams.microsoft.com/",
+}
+
+
+def bot_login(settings: Settings, provider: str) -> int:
+    """Opens a visible browser; the operator signs in to a dedicated bridge account,
+    then presses Enter and the session is saved for the bots to reuse."""
+    from playwright.sync_api import sync_playwright
+
+    from .bridge.runner import _UA
+
+    target = settings.bot_account_file(provider)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=False)
+            context = browser.new_context(user_agent=_UA, locale="en-US")
+            context.new_page().goto(SIGN_IN_URLS[provider])
+            input(f"Sign in to the bridge's {provider} account in the opened window, then press Enter here... ")
+            context.storage_state(path=str(target))
+            browser.close()
+    except Exception as exc:
+        print(f"could not open a browser window ({str(exc).splitlines()[0]}).\n"
+              f"Run this command on a machine with a display and copy the file to {target}", file=sys.stderr)
+        return 1
+    os.chmod(target, 0o600)
+    print(f"saved sign-in for {provider}: {target} (contains session cookies; keep it private)")
+    return 0
+
+
+def bot_logout(settings: Settings, provider: str) -> int:
+    target = settings.bot_account_file(provider)
+    if not target.exists():
+        print(f"no saved sign-in for {provider}")
+        return 0
+    target.unlink()
+    print(f"removed saved sign-in for {provider}; bridges will join as guests")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m meetbridge.cli", description="MeetBridge operations")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -214,6 +261,10 @@ def main(argv: list[str] | None = None) -> int:
     u = sub.add_parser("create-user", help="create an organizer account (password from prompt or MB_NEW_USER_PASSWORD)")
     u.add_argument("--email", required=True)
     u.add_argument("--name", default="")
+    bl = sub.add_parser("bot-login", help="save a signed-in session for a platform's bridge bots (needs a display)")
+    bl.add_argument("provider", choices=sorted(SIGN_IN_URLS))
+    bo = sub.add_parser("bot-logout", help="forget a platform's saved bridge sign-in")
+    bo.add_argument("provider", choices=sorted(SIGN_IN_URLS))
     args = parser.parse_args(argv)
 
     settings = get_settings()
@@ -231,6 +282,10 @@ def main(argv: list[str] | None = None) -> int:
         return restore(settings, args.path, args.yes)
     if args.cmd == "create-user":
         return create_user(settings, args.email, args.name)
+    if args.cmd == "bot-login":
+        return bot_login(settings, args.provider)
+    if args.cmd == "bot-logout":
+        return bot_logout(settings, args.provider)
     return 2
 
 

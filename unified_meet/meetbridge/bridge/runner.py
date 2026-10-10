@@ -97,17 +97,26 @@ class PlaywrightBotRunner:
                 await self._pw.stop()
                 self._pw = None
 
+    def context_options(self, provider: str) -> dict[str, Any]:
+        options: dict[str, Any] = {
+            "permissions": ["microphone", "camera"],
+            "bypass_csp": True,
+            "locale": "en-US",
+            "user_agent": _UA,
+            "viewport": {"width": 1280, "height": 720},
+        }
+        # A saved sign-in (see `cli bot-login`) lets the bot join as an authenticated
+        # user where a platform refuses anonymous guests.
+        account = self.settings.bot_account_file(provider)
+        if account.is_file():
+            options["storage_state"] = str(account)
+        return options
+
     async def run(self, job: BotJob, on_state: StateCallback, stop: asyncio.Event) -> str:
         adapter = self.registry.get(job.provider)
         meeting = adapter.parse(job.url, job.passcode)
         browser = await self._get_browser()
-        context = await browser.new_context(
-            permissions=["microphone", "camera"],
-            bypass_csp=True,
-            locale="en-US",
-            user_agent=_UA,
-            viewport={"width": 1280, "height": 720},
-        )
+        context = await browser.new_context(**self.context_options(job.provider))
         peer: Peer | None = None
         outbox: asyncio.Queue = asyncio.Queue(maxsize=1000)
         pump_task: asyncio.Task | None = None

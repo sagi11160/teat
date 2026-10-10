@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     bot_default_name: str = "MeetBridge"
     browser_channel: str = Field("", description="'' = bundled Chromium, or 'chrome' / 'msedge'")
     browser_headless: bool = True
+    bot_accounts_dir: Path | None = Field(
+        None, description="Saved sign-ins for bridge bots, <provider>.json (default: <data_dir>/bot-accounts)"
+    )
     supervisor_interval_seconds: float = 3.0
 
     enable_mock_provider: bool = Field(
@@ -64,6 +67,9 @@ class Settings(BaseSettings):
         if value not in {"development", "test", "production"}:
             raise ValueError("MB_ENV must be development, test or production")
         return value
+
+    def bot_account_file(self, provider: str) -> Path:
+        return (self.bot_accounts_dir or self.data_dir / "bot-accounts") / f"{provider}.json"
 
     def validate_for_startup(self) -> list[str]:
         """Returns fatal configuration problems (empty list when the config is usable)."""
