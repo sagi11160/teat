@@ -8,3 +8,4 @@ backups/
 *.db-wal
 *.db-shm
 test-artifacts/
+.venv/
