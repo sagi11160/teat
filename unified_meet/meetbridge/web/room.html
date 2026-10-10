@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ניהול חדר — MeetBridge</title>
+<link rel="stylesheet" href="/static/app.css">
+<script type="module" src="/static/room.js"></script>
+</head>
+<body>
+<a class="skip-link" href="#main">דילוג לתוכן</a>
+<header class="top">
+  <a class="brand" href="/"><span class="logo" aria-hidden="true"></span>MeetBridge</a>
+  <a href="/">← כל החדרים</a>
+  <span class="spacer"></span>
+  <span class="hint" id="live-status" role="status" aria-live="polite"></span>
+</header>
+<main class="page" id="main" tabindex="-1">
+  <div id="loading" class="stack" aria-busy="true" aria-label="טוען">
+    <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+  </div>
+  <div id="page-alert" hidden></div>
+
+  <div id="room" hidden class="stack">
+    <div class="row between">
+      <h1 id="room-title"></h1>
+      <a class="btn" id="open-call" target="_blank" rel="noopener">כניסה לשיחה מהדפדפן</a>
+    </div>
+
+    <section class="card stack" aria-labelledby="invite-h">
+      <h2 id="invite-h">קישור הזמנה אחד לכולם</h2>
+      <p class="hint">שלחו את הקישור הזה לכל המשתתפים. כל אחד יבחר להצטרף מ-Zoom, מ-Google Meet, מ-Teams או ישירות מהדפדפן — וכולם יהיו באותה שיחה.</p>
+      <div class="copy-box">
+        <label for="invite-url" class="sr-only">קישור ההזמנה</label>
+        <input id="invite-url" type="text" class="ltr" readonly>
+        <button class="secondary" id="copy-invite">העתקה</button>
+      </div>
+      <div class="row">
+        <button class="ghost" id="rotate-invite">החלפת קישור ההזמנה</button>
+        <span class="hint" id="copy-status" role="status" aria-live="polite"></span>
+      </div>
+    </section>
+
+    <div class="grid-2">
+      <section class="card stack" aria-labelledby="links-h">
+        <h2 id="links-h">פגישות מחוברות</h2>
+        <p class="hint">הדביקו קישור לפגישה קיימת. כשהגשר פעיל, משתתף-גשר בשם החדר נכנס לפגישה ומעביר קול ווידאו בינה לבין שאר הפלטפורמות.</p>
+        <form id="link-form" novalidate class="stack">
+          <div class="field">
+            <label for="link-url">קישור לפגישה</label>
+            <input id="link-url" name="url" type="text" class="ltr" required maxlength="1000" placeholder="https://zoom.us/j/… · https://meet.google.com/… · https://teams.microsoft.com/…">
+          </div>
+          <div class="grid-2">
+            <div class="field">
+              <label for="link-label">תיאור (לא חובה)</label>
+              <input id="link-label" name="label" type="text" maxlength="80" placeholder="למשל: הצוות בחו״ל">
+            </div>
+            <div class="field">
+              <label for="link-passcode">קוד גישה (אם יש)</label>
+              <input id="link-passcode" name="passcode" type="text" class="ltr" maxlength="64" autocomplete="off">
+            </div>
+          </div>
+          <div><button type="submit">חיבור הפגישה לחדר</button></div>
+          <div id="link-alert" hidden></div>
+        </form>
+        <ul class="links" id="links" aria-label="פגישות מחוברות"></ul>
+        <div class="empty" id="links-empty" hidden>עדיין לא חוברו פגישות לחדר.</div>
+      </section>
+
+      <div class="stack">
+        <section class="card stack" aria-labelledby="people-h">
+          <h2 id="people-h">בשיחה עכשיו <span class="chip" id="people-count">0</span></h2>
+          <ul class="participants" id="participants" aria-live="polite"></ul>
+          <div class="hint" id="participants-empty">אין כרגע אף אחד בשיחה.</div>
+        </section>
+
+        <section class="card stack" aria-labelledby="settings-h">
+          <h2 id="settings-h">הגדרות החדר</h2>
+          <form id="settings-form" novalidate>
+            <div class="field">
+              <label for="set-title">שם החדר</label>
+              <input id="set-title" name="title" type="text" required maxlength="120">
+            </div>
+            <div class="field">
+              <label for="set-bot">השם שיוצג למשתתפים בפלטפורמות</label>
+              <input id="set-bot" name="bot_display_name" type="text" required maxlength="60">
+              <div class="hint">כך יופיע הגשר ברשימת המשתתפים ב-Zoom, ב-Meet וב-Teams. שינוי ייכנס לתוקף בהפעלה הבאה של כל גשר.</div>
+            </div>
+            <div class="field"><button type="submit">שמירה</button></div>
+            <div id="settings-alert" hidden></div>
+          </form>
+        </section>
+      </div>
+    </div>
+
+    <section class="card stack" aria-labelledby="events-h">
+      <div class="row between">
+        <h2 id="events-h">יומן פעילות</h2>
+        <button class="ghost" id="refresh-events">רענון</button>
+      </div>
+      <ul class="events" id="events"></ul>
+      <div class="hint" id="events-empty" hidden>אין עדיין פעילות.</div>
+      <div><button class="secondary" id="more-events" hidden>טעינת פעילות קודמת</button></div>
+    </section>
+
+    <section class="card stack danger-zone" aria-labelledby="danger-h">
+      <h2 id="danger-h">מחיקת החדר</h2>
+      <p class="hint">כל הגשרים ינותקו, קישור ההזמנה יפסיק לעבוד והמשתתפים שמחוברים מהדפדפן יוצאו מהשיחה. אי אפשר לבטל את הפעולה.</p>
+      <div><button class="danger" id="delete-room">מחיקת החדר</button></div>
+    </section>
+  </div>
+</main>
+</body>
+</html>

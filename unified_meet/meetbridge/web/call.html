@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>שיחה — MeetBridge</title>
+<link rel="stylesheet" href="/static/app.css">
+<script type="module" src="/static/call.js"></script>
+</head>
+<body class="call">
+<a class="skip-link" href="#main">דילוג לתוכן</a>
+<header class="top">
+  <span class="brand"><span class="logo" aria-hidden="true"></span>MeetBridge</span>
+  <strong id="room-title"></strong>
+  <span class="spacer"></span>
+  <span class="hint" id="count" role="status" aria-live="polite"></span>
+</header>
+<main id="main" tabindex="-1">
+  <section class="prejoin card stack" id="prejoin">
+    <h1>הצטרפות לשיחה מהדפדפן</h1>
+    <div id="prejoin-alert" hidden></div>
+    <form id="prejoin-form" novalidate class="stack">
+      <div class="field">
+        <label for="name">השם שלכם</label>
+        <input id="name" name="name" type="text" required maxlength="60" autocomplete="name">
+      </div>
+      <div class="row">
+        <label class="row"><input type="checkbox" id="want-audio" checked> מיקרופון</label>
+        <label class="row"><input type="checkbox" id="want-video" checked> מצלמה</label>
+      </div>
+      <div class="hint">הדפדפן יבקש הרשאה למיקרופון ולמצלמה. אפשר להצטרף גם בלי — רק להאזין ולצפות.</div>
+      <div><button type="submit" id="join-btn">הצטרפות</button></div>
+    </form>
+  </section>
+
+  <section id="incall" hidden>
+    <div class="call-status" id="call-status" role="status" aria-live="polite"></div>
+    <div class="stage" id="stage" aria-label="משתתפים"></div>
+    <div class="controls" role="toolbar" aria-label="פקדי שיחה">
+      <button class="secondary" id="toggle-mic" aria-pressed="false">השתקה</button>
+      <button class="secondary" id="toggle-cam" aria-pressed="false">כיבוי מצלמה</button>
+      <button class="danger" id="leave">יציאה מהשיחה</button>
+    </div>
+  </section>
+
+  <section class="prejoin card stack" id="left" hidden>
+    <h1 id="left-title">יצאתם מהשיחה</h1>
+    <p id="left-text" class="hint"></p>
+    <div><a class="btn" id="rejoin" href="">הצטרפות מחדש</a></div>
+  </section>
+</main>
+</body>
+</html>
