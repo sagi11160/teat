@@ -105,21 +105,21 @@ class ProviderAdapter(ABC):
         # containing e.g. "the call has ended" cannot end the bridge.
         if await _any_visible(page, s.in_call):
             return Detection(CallStatus.IN_CALL)
-        text = (await _page_text(page)).lower()
+        text = _normalize(await _page_text(page))
         for phrase in s.denied_text:
-            if phrase.lower() in text:
+            if _normalize(phrase) in text:
                 return Detection(CallStatus.DENIED, phrase)
         for phrase in s.ended_text:
-            if phrase.lower() in text:
+            if _normalize(phrase) in text:
                 return Detection(CallStatus.ENDED, phrase)
         for phrase in s.invalid_text:
-            if phrase.lower() in text:
+            if _normalize(phrase) in text:
                 return Detection(CallStatus.INVALID, phrase)
         for phrase in s.blocked_text:
-            if phrase.lower() in text:
+            if _normalize(phrase) in text:
                 return Detection(CallStatus.BLOCKED, phrase)
         for phrase in s.waiting_text:
-            if phrase.lower() in text:
+            if _normalize(phrase) in text:
                 return Detection(CallStatus.WAITING, phrase)
         if await _any_visible(page, s.join_buttons) or await _any_visible(page, s.name_inputs):
             return Detection(CallStatus.PRE_JOIN)
@@ -191,6 +191,14 @@ def _frames(page: Any) -> list[Any]:
         return list(page.frames)
     except Exception:  # page closed
         return []
+
+
+_QUOTES = str.maketrans({"\u2019": "'", "\u2018": "'", "\u201c": '"', "\u201d": '"', "\u00a0": " "})
+
+
+def _normalize(text: str) -> str:
+    """Lower-cased, with typographic quotes and non-breaking spaces folded to ASCII."""
+    return text.translate(_QUOTES).lower()
 
 
 async def _page_text(page: Any) -> str:

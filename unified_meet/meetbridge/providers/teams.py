@@ -20,7 +20,6 @@ class TeamsAdapter(ProviderAdapter):
             "[data-tid='joinOnWeb']",
             "button:has-text('Join on the web instead')",
             "button:has-text('Accept')",
-            "button:has-text('Dismiss')",
         ),
         name_inputs=(
             "input[data-tid='prejoin-display-name-input']",
@@ -37,8 +36,11 @@ class TeamsAdapter(ProviderAdapter):
             "Waiting to be admitted",
         ),
         denied_text=("Sorry, but you were denied access to the meeting", "You've been removed from this meeting", "Someone removed you from the meeting"),
-        ended_text=("The meeting has ended", "This meeting has ended", "You left the meeting"),
-        invalid_text=("This meeting link is invalid", "We couldn't find this meeting", "The meeting doesn't exist"),
+        # The last phrase is Teams' post-call page, shown once the bot is out of the call.
+        ended_text=("The meeting has ended", "This meeting has ended", "You left the meeting",
+                    "Meetings are just one tool in our belt"),
+        invalid_text=("This meeting link is invalid", "We can't find this meeting", "We couldn't find this meeting",
+                      "The meeting doesn't exist"),
         blocked_text=(
             "Anonymous users can't join this meeting",
             "Sign in to join this meeting",
