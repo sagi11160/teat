@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import secrets
 import time
 from collections.abc import Callable
@@ -36,6 +37,15 @@ _CSP = (
 )
 
 
+_TOKEN_PATH = re.compile(r"^(/j/|/call/|/api/invite/|/ws/call/)[^/?]+")
+_REQUEST_ID = re.compile(r"[A-Za-z0-9._-]{1,64}")
+
+
+def redact_path(path: str) -> str:
+    """Invite tokens grant access to a room, so they never go into logs."""
+    return _TOKEN_PATH.sub(r"\1***", path)
+
+
 def create_app(settings: Settings | None = None, runner_factory: RunnerFactory | None = None) -> FastAPI:
     settings = settings or get_settings()
     configure_logging(settings.log_level, settings.log_json)
@@ -67,7 +77,8 @@ def create_app(settings: Settings | None = None, runner_factory: RunnerFactory |
 
     @app.middleware("http")
     async def request_context(request: Request, call_next):
-        request_id = request.headers.get("x-request-id") or secrets.token_hex(8)
+        incoming = request.headers.get("x-request-id", "")
+        request_id = incoming if _REQUEST_ID.fullmatch(incoming) else secrets.token_hex(8)
         request.state.request_id = request_id
         started = time.perf_counter()
         response = await call_next(request)
@@ -77,8 +88,10 @@ def create_app(settings: Settings | None = None, runner_factory: RunnerFactory |
         response.headers["Permissions-Policy"] = "camera=(self), microphone=(self), display-capture=()"
         if not request.url.path.startswith("/mock-meet"):
             response.headers["Content-Security-Policy"] = _CSP
-        if request.url.path.startswith("/api/") and not request.url.path.endswith("/stream"):
-            log.info("%s %s %s %.0fms rid=%s", request.method, request.url.path, response.status_code,
+        if settings.public_base_url.startswith("https://"):
+            response.headers["Strict-Transport-Security"] = "max-age=31536000"
+        if not request.url.path.startswith("/static/"):
+            log.info("%s %s %s %.0fms rid=%s", request.method, redact_path(request.url.path), response.status_code,
                      (time.perf_counter() - started) * 1000, request_id)
         return response
 
@@ -136,7 +149,9 @@ def run() -> None:
     import uvicorn
 
     settings = get_settings()
-    uvicorn.run(create_app(settings), host=settings.host, port=settings.port, log_config=None)
+    # The request middleware logs every request with invite tokens redacted, so
+    # uvicorn's own access log (full URLs) stays off.
+    uvicorn.run(create_app(settings), host=settings.host, port=settings.port, log_config=None, access_log=False)
 
 
 if __name__ == "__main__":

@@ -6,6 +6,8 @@ function selectTab(which) {
   const login = which === 'login';
   $('tab-login').setAttribute('aria-selected', String(login));
   $('tab-register').setAttribute('aria-selected', String(!login));
+  $('tab-login').tabIndex = login ? 0 : -1;
+  $('tab-register').tabIndex = login ? -1 : 0;
   $('login-form').hidden = !login;
   $('register-form').hidden = login;
   showAlert($('auth-alert'), 'error', '');
@@ -65,6 +67,14 @@ function formData(form) {
 
 $('tab-login').addEventListener('click', () => selectTab('login'));
 $('tab-register').addEventListener('click', () => selectTab('register'));
+document.querySelector('[role=tablist]').addEventListener('keydown', (ev) => {
+  if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(ev.key)) return;
+  ev.preventDefault();
+  const next = $('tab-login').getAttribute('aria-selected') === 'true' ? 'register' : 'login';
+  const target = ev.key === 'Home' ? 'login' : ev.key === 'End' ? 'register' : next;
+  selectTab(target);
+  $(`tab-${target}`).focus();
+});
 
 $('login-form').addEventListener('submit', async (ev) => {
   ev.preventDefault();

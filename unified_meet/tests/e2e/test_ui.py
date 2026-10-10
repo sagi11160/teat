@@ -182,6 +182,36 @@ def test_browser_call_page(live_server, browser_page):
     api.close()
 
 
+def test_keyboard_only_signup_and_room(live_server, browser_page):
+    page = browser_page
+    page.goto(live_server.base_url + "/")
+    page.wait_for_selector("#auth:not([hidden])")
+    page.keyboard.press("Tab")
+    expect(page.locator(".skip-link")).to_be_focused()
+    page.focus("#tab-login")
+    page.keyboard.press("ArrowLeft")
+    expect(page.locator("#tab-register")).to_be_focused()
+    expect(page.locator("#register-form")).to_be_visible()
+    page.keyboard.press("Tab")
+    expect(page.locator("#reg-name")).to_be_focused()
+    page.keyboard.type("Keyboard User")
+    page.keyboard.press("Tab")
+    page.keyboard.type(f"kb-{secrets.token_hex(3)}@example.com")
+    page.keyboard.press("Tab")
+    page.keyboard.type("correct horse battery")
+    page.keyboard.press("Enter")
+    expect(page.locator("#dashboard")).to_be_visible()
+    page.focus("#room-title")
+    page.keyboard.type("Keyboard room")
+    page.keyboard.press("Enter")
+    page.wait_for_url(re.compile(r"/rooms/"))
+    page.focus("#link-url")
+    page.keyboard.type("https://meet.google.com/abc-defg-hij")
+    page.keyboard.press("Enter")
+    expect(page.locator(".link-item")).to_have_count(1)
+    no_errors(page)
+
+
 def test_invalid_invite_and_call_links(live_server, browser_page):
     page = browser_page
     page.goto(f"{live_server.base_url}/j/doesnotexist")
