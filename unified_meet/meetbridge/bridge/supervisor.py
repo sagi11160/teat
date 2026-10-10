@@ -8,7 +8,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import event, select
 
 from ..config import Settings
 from ..db import session_scope
@@ -242,7 +242,10 @@ class Supervisor:
         payload = {"state": state.value, "detail": detail, **(extra or {})}
         db.add(RoomEvent(room_id=link.room_id, link_id=link.id, actor=actor, kind="link_state", detail=payload))
         db.flush()
-        self.bus_publish(link.room_id, {"type": "link", "link": link_public(link)})
+        # Dashboards re-read the event log when notified, so notify only once the
+        # change is committed and visible to other connections.
+        message = {"type": "link", "link": link_public(link)}
+        event.listen(db, "after_commit", lambda _s: self.bus_publish(link.room_id, message), once=True)
 
     def bus_publish(self, room_id: str, event: dict[str, Any]) -> None:
         # State changes are written from worker threads (asyncio.to_thread).

@@ -48,6 +48,29 @@ def test_start_goes_live_and_stop_disconnects(client, runner):
     assert {"bridge_start_requested", "bridge_stop_requested"} <= kinds
 
 
+def test_state_events_are_published_only_after_commit(client, runner):
+    from meetbridge.db import session_scope
+    from meetbridge.models import MeetingLink
+
+    rid, lid = setup_link(client)
+    bus = client.app.state.services.bus
+    original = bus.publish
+    seen: list[tuple[str, str]] = []
+
+    def checking_publish(room_id, event):
+        if event.get("type") == "link":
+            with session_scope() as db:
+                stored = db.get(MeetingLink, event["link"]["id"]).state
+            seen.append((event["link"]["state"], stored))
+        original(room_id, event)
+
+    bus.publish = checking_publish
+    client.post(f"/api/rooms/{rid}/links/{lid}/start", headers=CSRF)
+    wait_for(state_is(client, rid, lid, "live"))
+    wait_for(lambda: any(s == "live" for s, _ in seen))
+    assert seen and all(published == stored for published, stored in seen), seen
+
+
 def test_start_is_idempotent(client, runner):
     rid, lid = setup_link(client)
     client.post(f"/api/rooms/{rid}/links/{lid}/start", headers=CSRF)
